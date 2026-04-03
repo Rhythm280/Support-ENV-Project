@@ -26,8 +26,9 @@ from src.models import Action, ActionType, TaskName
 
 # ── Config ──────────────────────────────────────────────────────────────────
 API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
-API_KEY      = os.getenv("HF_TOKEN") or os.getenv("API_KEY")
 MODEL_NAME   = os.getenv("MODEL_NAME", "meta-llama/Meta-Llama-3-8B-Instruct")
+HF_TOKEN     = os.getenv("HF_TOKEN")
+LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME")
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger(__name__)
@@ -35,7 +36,7 @@ logger = logging.getLogger(__name__)
 if _OPENAI_AVAILABLE:
     client = OpenAI(
         base_url=API_BASE_URL,
-        api_key=API_KEY if API_KEY else "n/a",
+        api_key=HF_TOKEN if HF_TOKEN else "n/a",
     )
 else:
     client = None  # type: ignore
