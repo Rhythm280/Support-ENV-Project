@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SupportEnv — AI Customer Support RL Dashboard</title>
+  <meta name="description" content="Live visualization of an AI agent resolving customer support tickets in an RL environment. Watch the agent classify, prioritize, respond, and escalate tickets in real time." />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div class="app">
+
+  <!-- ── Header ───────────────────────────────────────────────── -->
+  <header>
+    <div class="header-brand">
+      <div class="brand-icon">🎯</div>
+      <div>
+        <div class="brand-title">SupportEnv</div>
+        <div class="brand-subtitle">AI Customer Support · RL Environment</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="task-selector" id="taskSelector" role="group" aria-label="Task difficulty">
+        <button class="task-btn active" id="btn-easy"   onclick="selectTask('easy')"  >Easy</button>
+        <button class="task-btn"        id="btn-medium" onclick="selectTask('medium')">Medium</button>
+        <button class="task-btn"        id="btn-hard"   onclick="selectTask('hard')"  >Hard</button>
+      </div>
+      <button class="btn btn-primary" id="resetBtn" onclick="handleReset()">⟳ Reset</button>
+      <button class="btn btn-run"     id="runBtn"  onclick="handleRun()"  >▶ Run Agent</button>
+    </div>
+  </header>
+
+  <!-- ── Stat bar ──────────────────────────────────────────────── -->
+  <div class="stat-bar">
+    <div class="stat-card">
+      <div class="stat-label">Task</div>
+      <div class="stat-value accent" id="statTask">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Step</div>
+      <div class="stat-value" id="statStep">0</div>
+      <div class="stat-sub" id="statStepMax">/ — max</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Cum. Reward</div>
+      <div class="stat-value" id="statReward">+0.000</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Tickets</div>
+      <div class="stat-value" id="statTickets">—</div>
+      <div class="stat-sub" id="statResolved">0 resolved</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Final Score</div>
+      <div class="stat-value score accent" id="statScore">—</div>
+    </div>
+  </div>
+
+  <!-- ── Main grid ─────────────────────────────────────────────── -->
+  <div class="main-grid">
+
+    <!-- Left: Ticket board -->
+    <div>
+      <!-- Agent action banner -->
+      <div id="agentBanner">
+        <div class="spinner"></div>
+        <span id="agentBannerText">Agent is thinking…</span>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <div class="dot" id="liveDot"></div>
+            Ticket Board
+          </div>
+          <span class="badge badge-cyan" id="ticketCountBadge">0 tickets</span>
+        </div>
+        <div id="taskDesc">Select a task and click Reset to load tickets.</div>
+        <div id="ticketGrid">
+          <div class="empty-state">
+            <div class="empty-icon">📋</div>
+            <div class="empty-text">No tickets loaded — click <strong>Reset</strong> to start</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Side panel -->
+    <div class="side-panel">
+
+      <!-- Reward sparkline -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Reward History</div>
+          <span class="badge badge-green" id="rewardBadge">Δ 0.000</span>
+        </div>
+        <div class="chart-wrap" id="rewardChart"></div>
+      </div>
+
+      <!-- Score breakdown (shown after episode ends) -->
+      <div class="panel" id="scorePanel">
+        <div class="panel-header">
+          <div class="panel-title">Episode Score</div>
+          <span class="badge badge-purple">Graded</span>
+        </div>
+        <div style="padding: 20px;">
+          <div class="score-main">
+            <div class="score-pct" id="scorePct">—</div>
+            <div class="score-label" id="scoreSummary"></div>
+          </div>
+          <div id="breakdownRows"></div>
+        </div>
+      </div>
+
+      <!-- Step log -->
+      <div class="panel" style="flex:1">
+        <div class="panel-header">
+          <div class="panel-title">Step Log</div>
+          <span class="badge badge-cyan" id="logBadge">0 steps</span>
+        </div>
+        <div class="log-scroll" id="logScroll">
+          <div style="text-align:center; color: var(--text-muted); font-size:12px; padding:20px;">
+            Waiting for first action…
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,203 @@
+name: support-env
+version: "2.0.0"
+v2_compliant: true
+domain: "Customer Support / AgentOps"
+description: >
+  SupportEnv is a dynamic, reproducible, stateful AgentOps benchmark for
+  evaluating LLM agents on multi-step customer support workflows. Agents must
+  classify, prioritize, respond to, and escalate customer tickets across three
+  difficulty levels (Easy, Medium, Hard) while handling dynamic state changes
+  such as priority escalation, user tone worsening, and ticket dependencies.
+
+author: "Hackathon Team"
+license: "MIT"
+python_requires: ">=3.10"
+
+# ─── Tasks ────────────────────────────────────────────────────────────────────
+tasks:
+  - name: easy
+    description: "Classify 5 tickets into the correct category."
+    max_steps: 15
+    ticket_count: 5
+    allowed_actions: [classify]
+    grader: "grade_easy"
+    success_criteria: "Score ≥ 0.8 (4/5 correctly classified)"
+    reward_shaping:
+      correct_classify: +0.3
+      wrong_classify: -0.3
+      repeated_action: -0.5
+      invalid_action: -1.0
+
+  - name: medium
+    description: "Classify and prioritize 6 tickets correctly."
+    max_steps: 25
+    ticket_count: 6
+    allowed_actions: [classify, prioritize]
+    grader: "grade_medium"
+    success_criteria: "Score ≥ 0.75 (classification 50% + prioritization 50%)"
+    reward_shaping:
+      correct_classify: +0.3
+      correct_prioritize: +0.3
+      wrong_action: -0.3
+      repeated_action: -0.5
+      invalid_action: -1.0
+
+  - name: hard
+    description: >
+      Full pipeline: classify, prioritize, respond or escalate, then close 7 tickets.
+      Handles priorities, ticket dependencies, and user tone dynamics.
+    max_steps: 40
+    ticket_count: 7
+    allowed_actions: [classify, prioritize, respond, escalate, close]
+    grader: "grade_hard"
+    success_criteria: >
+      Score ≥ 0.70 across: classification (30%), prioritization (25%),
+      response quality (25%), escalation accuracy (20%).
+    reward_shaping:
+      correct_classify: +0.3
+      relevant_respond: +0.5
+      no_forbidden_bonus: +0.2
+      correct_escalate: +0.3
+      close_resolved: +0.2
+      wrong_action: -0.3
+      repeated_action: -0.5
+      invalid_action: -1.0
+
+# ─── Action Space ─────────────────────────────────────────────────────────────
+action_space:
+  type: discrete-typed
+  schema:
+    action_type:
+      type: enum
+      values: [classify, prioritize, respond, escalate, close]
+    ticket_id:
+      type: integer
+      description: "ID of the ticket to act on"
+    content:
+      type: string
+      nullable: true
+      description: "Category name | priority name | response text | null for close/escalate"
+
+# ─── Observation Space ────────────────────────────────────────────────────────
+observation_space:
+  type: structured
+  schema:
+    tickets:
+      type: array
+      items:
+        id: integer
+        text: string
+        persona: "angry | polite | confused"
+        category: "string | null"
+        priority: "string | null"
+        status: "open | closed | escalated"
+        urgency_hint: "urgent | normal"
+        dependencies: "list[integer]"
+    step_count: integer
+    cumulative_reward: float
+    last_action_error: boolean
+    task: string
+    info:
+      tickets_resolved: integer
+      efficiency: float
+      loops_detected: integer
+      priority_misses: integer
+
+# ─── Generator ────────────────────────────────────────────────────────────────
+generator:
+  module: "src.generator"
+  function: "generate_tickets"
+  seed_controlled: true
+  categories: [billing, technical, general, complaint, positive]
+  personas: [angry, polite, confused]
+  noise_injection: true
+  metadata_per_ticket:
+    - required_keywords
+    - forbidden_phrases
+    - resolution_steps
+    - persona
+    - escalation_step
+    - dependencies
+
+# ─── Dynamics ─────────────────────────────────────────────────────────────────
+dynamics:
+  priority_escalation:
+    enabled: true
+    description: "Ticket priority increases if not resolved before escalation_step"
+  tone_worsening:
+    enabled: true
+    description: "User persona worsens (polite→confused→angry) on repeated bad responses"
+  ticket_dependencies:
+    enabled: true
+    tasks: [hard]
+    description: "Some tickets can only be acted on after prerequisite tickets are resolved"
+  partial_observability:
+    enabled: true
+    hidden_fields: [true_category, true_priority, requires_escalation, resolution_steps]
+
+# ─── Graders ──────────────────────────────────────────────────────────────────
+graders:
+  module: "src.graders"
+  deterministic: true
+  llm_free: true
+  scores_per_ticket:
+    category_match: 0.3
+    required_keywords_present: 0.5
+    no_forbidden_phrases: 0.2
+  score_range: [0.0, 1.0]
+
+# ─── Database ─────────────────────────────────────────────────────────────────
+database:
+  type: sqlite
+  module: "src.database"
+  default_path: "support_env.db"
+  env_override: "SUPPORT_ENV_DB"
+  tables:
+    - episodes
+    - tickets
+    - actions
+    - metrics
+  replay_supported: true
+
+# ─── Supabase ─────────────────────────────────────────────────────────────────
+supabase:
+  optional: true
+  module: "src.supabase_client"
+  enable_env_var: "ENABLE_SUPABASE"
+  url_env_var: "SUPABASE_URL"
+  key_env_var: "SUPABASE_KEY"
+  purpose: "analytics only — environment logic does NOT depend on it"
+
+# ─── Categories / Priorities ──────────────────────────────────────────────────
+categories:
+  - billing
+  - technical
+  - general
+  - complaint
+  - positive
+
+priorities:
+  - low
+  - medium
+  - high
+
+# ─── API ──────────────────────────────────────────────────────────────────────
+api:
+  protocol: REST
+  base_url: "http://localhost:7860"
+  endpoints:
+    reset:   "POST /env/reset"
+    step:    "POST /env/step"
+    state:   "GET  /env/state"
+    grade:   "GET  /env/grade"
+    replay:  "GET  /env/replay/{episode_id}"
+    health:  "GET  /health"
+    episodes: "GET  /env/episodes"
+
+# ─── Meta ─────────────────────────────────────────────────────────────────────
+deterministic_grader: true
+reward_range: [-inf, +inf]
+reproducible: true
+max_runtime_minutes: 20
+compute_requirements: "CPU only — 2 vCPU, 8GB RAM"
+ticket_bank_strategy: "procedural — infinite unique episodes via seed"
