@@ -1,3 +1,13 @@
+---
+title: SupportEnv AgentOps Benchmark
+emoji: 🎯
+colorFrom: blue
+colorTo: green
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # 🎯 SupportEnv — Dynamic AgentOps Benchmark for LLM Agents
 
 > **A production-ready, reproducible, stateful reinforcement learning environment for evaluating LLM agents on multi-step customer support workflows.**
