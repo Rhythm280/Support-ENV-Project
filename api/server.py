@@ -84,6 +84,15 @@ def _get_env() -> SupportEnv:
 # Routes
 # ─────────────────────────────────────────────
 
+@app.get("/")
+def read_root():
+    return {
+        "message": "Welcome to SupportEnv AgentOps Benchmark! 🎯",
+        "docs": "/docs",
+        "dashboard": "/dashboard",
+        "health": "/health"
+    }
+
 @app.get("/health")
 def health():
     return {"status": "ok", "env_ready": _env is not None}
