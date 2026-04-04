@@ -1,7 +1,7 @@
 ---
 title: SupportEnv AgentOps Benchmark
 emoji: 🎯
-colorFrom: cyan
+colorFrom: blue
 colorTo: purple
 sdk: docker
 app_port: 7860
