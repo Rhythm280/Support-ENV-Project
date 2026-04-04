@@ -124,12 +124,8 @@ def _get_env() -> SupportEnv:
 
 @app.get("/")
 def read_root():
-    return {
-        "message": "Welcome to SupportEnv AgentOps Benchmark! 🎯",
-        "docs": "/docs",
-        "dashboard": "/dashboard",
-        "health": "/health"
-    }
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/dashboard/")
 
 @app.get("/health")
 def health():

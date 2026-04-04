@@ -1,32 +1,36 @@
 FROM python:3.10-slim
 
-# Metadata
-LABEL maintainer="Hackathon Team"
-LABEL description="SupportEnv — AgentOps benchmark for LLM agent evaluation"
-LABEL version="2.0.0"
+# Use a non-root user for security and HF compatibility
+RUN useradd -m -u 1000 user
+USER user
+ENV HOME=/home/user \
+    PATH=/home/user/.local/bin:$PATH
 
 # Set working directory
-WORKDIR /app
+WORKDIR $HOME/app
 
 # System deps (curl for healthcheck)
+# Needs to be root for apt-get
+USER root
 RUN apt-get update && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
+USER user
 
 # Install Python dependencies first (layer caching)
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY --chown=user requirements.txt .
+RUN pip install --no-cache-dir --user -r requirements.txt
 
 # Copy full source
-COPY . .
+COPY --chown=user . .
 
 # Ensure package __init__ files exist
 RUN touch src/__init__.py api/__init__.py
 
 # Create data directory for SQLite database
-RUN mkdir -p /app/data
+RUN mkdir -p $HOME/app/data && chown -R user:user $HOME/app/data
 
 # Environment defaults
-ENV SUPPORT_ENV_DB=/app/data/support_env.db
+ENV SUPPORT_ENV_DB=$HOME/app/data/support_env.db
 ENV ENABLE_SUPABASE=false
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
