@@ -89,6 +89,37 @@
     <!-- Right: Side panel -->
     <div class="side-panel">
 
+      <!-- Inject Custom Ticket -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">✍️ Inject Custom Ticket</div>
+          <span class="badge badge-purple" id="injectStatus">ready</span>
+        </div>
+        <div class="panel-body" style="padding: 14px;">
+          <textarea id="customTicketText" class="form-control" placeholder="Type customer query here..." rows="3" style="width:100%; margin-bottom:10px;"></textarea>
+          <div class="form-row">
+            <select id="customTicketCat" class="form-control">
+              <option value="billing">Billing</option>
+              <option value="technical">Technical</option>
+              <option value="general">General</option>
+              <option value="complaint">Complaint</option>
+              <option value="positive">Positive</option>
+            </select>
+            <select id="customTicketPri" class="form-control">
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+          </div>
+          <div style="margin-top:10px; display:flex; gap:10px; align-items:center;">
+             <label style="font-size:11px; color:var(--text-secondary); display:flex; align-items:center; gap:5px; flex:1">
+               <input type="checkbox" id="customTicketEscalate"> Needs Escalation
+             </label>
+             <button class="btn btn-primary btn-sm" onclick="handleInjectTicket()">Inject</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Reward sparkline -->
       <div class="panel">
         <div class="panel-header">
@@ -110,6 +141,17 @@
             <div class="score-label" id="scoreSummary"></div>
           </div>
           <div id="breakdownRows"></div>
+        </div>
+      </div>
+      
+      <!-- Live Terminal (Live Stream) -->
+      <div class="panel terminal-panel">
+        <div class="panel-header">
+          <div class="panel-title">📡 Live Stream</div>
+          <span class="badge badge-error" id="wsStatus">offline</span>
+        </div>
+        <div class="terminal-body" id="terminalGrid">
+          <div class="terminal-line system">Waiting for connection…</div>
         </div>
       </div>
 

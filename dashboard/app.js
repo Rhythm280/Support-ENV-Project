@@ -19,6 +19,11 @@ let stepLog       = [];
 let isRunning     = false;
 let episodeDone   = false;
 
+// ── WebSocket State ────────────────────────────────────────────────────────
+let ws            = null;
+let reconnectWait = 1000; // ms
+const MAX_RECONNECT = 30000; // 30s max wait
+
 // ── Task metadata ────────────────────────────────────────────────────────────
 const TASK_DESCS = {
   easy:   'Classify 5 tickets into the correct category (billing, technical, general, complaint, positive). Actions: classify.',
@@ -122,6 +127,50 @@ async function handleReset() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Inject Custom Ticket
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function handleInjectTicket() {
+  const text     = document.getElementById('customTicketText').value;
+  const category = document.getElementById('customTicketCat').value;
+  const priority = document.getElementById('customTicketPri').value;
+  const escalate = document.getElementById('customTicketEscalate').checked;
+
+  if (!text.trim()) {
+    alert("Please enter ticket text.");
+    return;
+  }
+
+  const statusEl = document.getElementById('injectStatus');
+  statusEl.textContent = 'injecting…';
+  statusEl.className   = 'badge badge-amber';
+
+  try {
+    await apiPost('/env/ticket', {
+      text,
+      category,
+      priority,
+      persona: "polite",
+      requires_escalation: escalate
+    });
+    
+    // Clear form
+    document.getElementById('customTicketText').value = '';
+    statusEl.textContent = 'success';
+    statusEl.className   = 'badge badge-green';
+    setTimeout(() => {
+      statusEl.textContent = 'ready';
+      statusEl.className   = 'badge badge-purple';
+    }, 2000);
+
+  } catch (err) {
+    statusEl.textContent = 'error';
+    statusEl.className   = 'badge badge-error';
+    showApiError(err);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Run agent
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -140,13 +189,29 @@ async function handleRun() {
 
     let done = state.done;
     let safetyCounter = 0;
+    let lastActionLog = null; // To detect repetitive failed actions
+    let repeatActionCount = 0;
 
-    while (!done && safetyCounter < 80) {
+    while (!done && safetyCounter < 150) {
       safetyCounter++;
 
       // Find next action to take using client-side rule-based agent
       const action = decideNextAction(tickets, allowed);
       if (!action) break;
+
+      // Loop prevention: If we've tried the exact same action/ticket too many times without success
+      const actionKey = `${action.action_type}:${action.ticket_id}`;
+      if (actionKey === lastActionLog) {
+        repeatActionCount++;
+        if (repeatActionCount > 3) {
+          console.error(`🛑 Agent stuck in a loop on ticket #${action.ticket_id}. Stopping.`);
+          appendToTerminal(`System: [ERROR] Agent stuck in loop on Ticket #${action.ticket_id}. Manual intervention required.`, 'error');
+          break;
+        }
+      } else {
+        lastActionLog = actionKey;
+        repeatActionCount = 0;
+      }
 
       setAgentBanner(true, `Acting on ticket #${action.ticket_id}: ${action.action_type}…`);
       await sleep(STEP_DELAY_MS);
@@ -434,4 +499,86 @@ function sleep(ms) {
 
 document.addEventListener('DOMContentLoaded', () => {
   selectTask('easy');
+  initWebSocket();
 });
+
+// ── WebSocket Client ────────────────────────────────────────────────────────
+
+function initWebSocket() {
+  const wsStatus = document.getElementById('wsStatus');
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const wsUrl    = `${protocol}//${window.location.host}${window.location.pathname.replace(/\/dashboard\/?$/, '')}/ws`;
+  
+  // If running from file: or weird origin, use hardcoded base
+  const finalUrl = (window.location.protocol === 'file:' || !window.location.host) 
+    ? 'ws://127.0.0.1:7860/ws' 
+    : wsUrl;
+
+  console.log(`📡 Connecting to Live Stream: ${finalUrl}`);
+  ws = new WebSocket(finalUrl);
+
+  ws.onopen = () => {
+    console.log('✅ Live Stream Connected');
+    wsStatus.textContent = 'online';
+    wsStatus.className   = 'badge badge-green';
+    reconnectWait = 1000; // reset wait
+    appendToTerminal('System: [CONNECTED] Live-Stream Terminal initialized.', 'system');
+  };
+
+  ws.onmessage = async (event) => {
+    try {
+      const data = JSON.parse(event.data);
+      if (data.type === 'system') {
+        appendToTerminal(`System: ${data.message}`, 'system');
+      } else if (data.type === 'event') {
+        const colorClass = data.reward > 0 ? 'success' : data.reward < 0 ? 'error' : '';
+        appendToTerminal(data.message, colorClass);
+        
+        // Auto-refresh UI on key events
+        if (data.event === 'ticket_added' || data.event === 'reset') {
+          const state = await apiGet('/env/state');
+          renderTickets(state.tickets);
+          updateStats(state);
+        }
+      }
+    } catch (err) {
+      console.error('WS Message Error:', err);
+    }
+  };
+
+  ws.onclose = () => {
+    console.warn(`❌ Live Stream Disconnected. Reconnecting in ${reconnectWait}ms…`);
+    wsStatus.textContent = 'offline';
+    wsStatus.className   = 'badge badge-error';
+    appendToTerminal('System: [DISCONNECTED] Reconnecting...', 'error');
+    
+    setTimeout(() => {
+      reconnectWait = Math.min(reconnectWait * 1.5, MAX_RECONNECT);
+      initWebSocket();
+    }, reconnectWait);
+  };
+
+  ws.onerror = (err) => {
+    console.error('WS Error:', err);
+  };
+}
+
+function appendToTerminal(message, type = '') {
+  const grid = document.getElementById('terminalGrid');
+  const line = document.createElement('div');
+  line.className = `terminal-line ${type}`;
+  
+  const now = new Date();
+  const timeStr = now.toTimeString().split(' ')[0];
+  
+  line.textContent = `[${timeStr}] ${message}`;
+  grid.appendChild(line);
+
+  // Auto-scroll to bottom
+  grid.scrollTop = grid.scrollHeight;
+  
+  // Keep only last 100 lines
+  while (grid.children.length > 100) {
+    grid.removeChild(grid.firstChild);
+  }
+}

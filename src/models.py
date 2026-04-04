@@ -23,6 +23,7 @@ class ActionType(str, Enum):
     RESPOND    = "respond"
     ESCALATE   = "escalate"
     CLOSE      = "close"
+    SEARCH     = "search"
 
 
 class Category(str, Enum):
@@ -127,6 +128,7 @@ class Observation(BaseModel):
     cumulative_reward: float
     last_action_error: bool = False
     task: str
+    search_results: List[Dict[str, str]] = Field(default_factory=list)
     info: Dict[str, Any] = Field(
         default_factory=dict,
         description="Dense metrics: tickets_resolved, efficiency, loops_detected, priority_misses",

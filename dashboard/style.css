@@ -542,6 +542,93 @@ header {
 }
 
 /* ── Scrollbar ───────────────────────────────────────────────── */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 3px; }
+/* ── Live Terminal ───────────────────────────────────────────── */
+.terminal-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 200px;
+  max-height: 300px;
+  background: #0a0a0a !important;
+  border-color: #1a1a1a !important;
+}
+
+.terminal-body {
+  flex: 1;
+  padding: 12px;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Source Code Pro', monospace;
+  font-size: 11px;
+  overflow-y: auto;
+  color: #00ff41; /* Classic Matrix Green */
+  line-height: 1.4;
+  text-shadow: 0 0 5px rgba(0, 255, 65, 0.2);
+}
+
+.terminal-body::-webkit-scrollbar { width: 4px; }
+.terminal-body::-webkit-scrollbar-thumb { background: #1a1a1a; border-radius: 2px; }
+
+.terminal-line {
+  margin-bottom: 2px;
+  word-break: break-all;
+  white-space: pre-wrap;
+  animation: typing 0.1s ease-out forwards;
+}
+
+@keyframes typing {
+  from { opacity: 0; transform: translateY(2px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.terminal-line.system {
+  color: var(--cyan);
+  font-weight: 600;
+  opacity: 0.8;
+}
+
+.terminal-line.error {
+  color: var(--red);
+}
+
+.terminal-line.success {
+  color: var(--green);
+}
+
+.badge-error { background: rgba(255, 82, 82, 0.1); color: var(--red); }
+
+/* CRT Scanline effect (subtle) */
+.terminal-body::after {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.02));
+  z-index: 2;
+  background-size: 100% 2px, 3px 100%;
+  pointer-events: none;
+}
+
+/* ── Form Elements ───────────────────────────────────────────── */
+.form-row { display: flex; gap: 8px; margin-bottom: 8px; }
+.form-control {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    padding: 8px 12px;
+    font-size: 13px;
+    flex: 1;
+    font-family: inherit;
+    transition: border-color 0.2s, background 0.2s;
+}
+.form-control:focus {
+    outline: none;
+    border-color: var(--cyan);
+    background: rgba(255, 255, 255, 0.07);
+}
+textarea.form-control { resize: vertical; min-height: 60px; }
+.btn-sm { padding: 6px 12px; font-size: 12px; }
+input[type="checkbox"] {
+    accent-color: var(--cyan);
+    cursor: pointer;
+}
+
+

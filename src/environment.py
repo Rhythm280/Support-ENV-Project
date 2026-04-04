@@ -140,6 +140,35 @@ class SupportEnv:
         )
         return self._build_observation(error=False)
 
+    def add_ticket(
+        self,
+        text: str,
+        true_category: str,
+        true_priority: str,
+        persona: str = "polite",
+        requires_escalation: bool = False,
+    ) -> Ticket:
+        """Inject a custom ticket into the environment state."""
+        from src.models import Ticket, Category, Priority
+        
+        # Determine next ID
+        next_id = max([t.id for t in self._tickets], default=0) + 1
+        
+        ticket = Ticket(
+            id=next_id,
+            text=text,
+            true_category=Category(true_category),
+            true_priority=Priority(true_priority),
+            persona=persona,
+            requires_escalation=requires_escalation,
+        )
+        
+        self._tickets.append(ticket)
+        self._bad_response_counts[ticket.id] = 0
+        
+        logger.info("[SupportEnv] Injected custom ticket #%d: %s...", ticket.id, text[:30])
+        return ticket
+
     def step(self, action: Action) -> tuple[Observation, float, bool, dict]:
         """
         Execute one action and return (observation, reward, done, info).
