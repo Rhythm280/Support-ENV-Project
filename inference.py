@@ -85,7 +85,7 @@ class BaselineAgent:
         if not _OPENAI_AVAILABLE or client is None:
             logger.warning("⚠️  openai package not installed — falling back to rule agent.")
             return self._rule_act(obs, config)
-        if not API_KEY or API_KEY == "n/a":
+        if not HF_TOKEN or HF_TOKEN == "n/a":
             logger.warning("⚠️  HF_TOKEN not set — falling back to rule-based agent.")
             return self._rule_act(obs, config)
 
