@@ -546,8 +546,8 @@ header {
 .terminal-panel {
   display: flex;
   flex-direction: column;
-  min-height: 200px;
-  max-height: 300px;
+  min-height: 240px;
+  max-height: 240px;
   background: #0a0a0a !important;
   border-color: #1a1a1a !important;
 }

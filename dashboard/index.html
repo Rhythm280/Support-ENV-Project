@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SupportEnv — AI Customer Support RL Dashboard</title>
-  <meta name="description" content="Live visualization of an AI agent resolving customer support tickets in an RL environment. Watch the agent classify, prioritize, respond, and escalate tickets in real time." />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -62,18 +61,13 @@
 
     <!-- Left: Ticket board -->
     <div>
-      <!-- Agent action banner -->
       <div id="agentBanner">
         <div class="spinner"></div>
         <span id="agentBannerText">Agent is thinking…</span>
       </div>
-
       <div class="panel">
         <div class="panel-header">
-          <div class="panel-title">
-            <div class="dot" id="liveDot"></div>
-            Ticket Board
-          </div>
+          <div class="panel-title"><div class="dot" id="liveDot"></div>Ticket Board</div>
           <span class="badge badge-cyan" id="ticketCountBadge">0 tickets</span>
         </div>
         <div id="taskDesc">Select a task and click Reset to load tickets.</div>
@@ -88,8 +82,18 @@
 
     <!-- Right: Side panel -->
     <div class="side-panel">
+      <!-- 1. Live Terminal (Top) -->
+      <div class="panel terminal-panel">
+        <div class="panel-header">
+          <div class="panel-title">📡 Live Stream</div>
+          <span class="badge badge-error" id="wsStatus">offline</span>
+        </div>
+        <div class="terminal-body" id="terminalGrid">
+          <div class="terminal-line system">Waiting for connection…</div>
+        </div>
+      </div>
 
-      <!-- Inject Custom Ticket -->
+      <!-- 2. Inject Custom Ticket -->
       <div class="panel">
         <div class="panel-header">
           <div class="panel-title">✍️ Inject Custom Ticket</div>
@@ -120,7 +124,7 @@
         </div>
       </div>
 
-      <!-- Reward sparkline -->
+      <!-- 3. Reward History -->
       <div class="panel">
         <div class="panel-header">
           <div class="panel-title">Reward History</div>
@@ -129,7 +133,7 @@
         <div class="chart-wrap" id="rewardChart"></div>
       </div>
 
-      <!-- Score breakdown (shown after episode ends) -->
+      <!-- 4. Score Breakdown -->
       <div class="panel" id="scorePanel">
         <div class="panel-header">
           <div class="panel-title">Episode Score</div>
@@ -143,19 +147,8 @@
           <div id="breakdownRows"></div>
         </div>
       </div>
-      
-      <!-- Live Terminal (Live Stream) -->
-      <div class="panel terminal-panel">
-        <div class="panel-header">
-          <div class="panel-title">📡 Live Stream</div>
-          <span class="badge badge-error" id="wsStatus">offline</span>
-        </div>
-        <div class="terminal-body" id="terminalGrid">
-          <div class="terminal-line system">Waiting for connection…</div>
-        </div>
-      </div>
 
-      <!-- Step log -->
+      <!-- 5. Step log -->
       <div class="panel" style="flex:1">
         <div class="panel-header">
           <div class="panel-title">Step Log</div>
@@ -167,10 +160,8 @@
           </div>
         </div>
       </div>
-
     </div>
   </div>
-
 </div>
 
 <script src="app.js"></script>
