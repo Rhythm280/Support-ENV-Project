@@ -1,301 +1,163 @@
 ---
 title: SupportEnv AgentOps Benchmark
 emoji: 🎯
-colorFrom: blue
-colorTo: green
+colorFrom: cyan
+colorTo: purple
 sdk: docker
 app_port: 7860
-pinned: false
+pinned: true
 ---
 
-# 🎯 SupportEnv — Dynamic AgentOps Benchmark for LLM Agents
+# 🎯 SupportEnv — AgentOps & Live Observability Benchmark
 
-> **A production-ready, reproducible, stateful reinforcement learning environment for evaluating LLM agents on multi-step customer support workflows.**
+> **A production-ready, interactive AgentOps platform for evaluating LLM agents on multi-step customer support workflows. Built with FastAPI, WebSockets, and a premium Glassmorphism UI.**
 
 [![OpenEnv v2 Compliant](https://img.shields.io/badge/OpenEnv-v2%20Compliant-brightgreen)](https://openenv.ai)
-[![HuggingFace Spaces](https://img.shields.io/badge/🤗-Spaces%20Ready-blue)](https://huggingface.co/spaces)
+[![HuggingFace Spaces](https://img.shields.io/badge/🤗-Spaces%20Ready-blue)](https://huggingface.co/spaces/Joy2801/AgentOps-Support-Benchmark)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker)](./Dockerfile)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ---
 
-## 🧠 Why SupportEnv?
+## 🚀 Live AgentOps Dashboard
 
-Most LLM agent benchmarks evaluate static, single-step tasks. Real-world enterprise applications require **multi-step reasoning under evolving state** — exactly what SupportEnv tests.
+SupportEnv is no longer just a CLI tool. It is now a full-stack **Observability Platform** for AI Agents.
 
-SupportEnv is built as an **AgentOps benchmark**: a structured, reproducible environment that measures an agent's ability to:
+### 🖥️ Interactive Monitoring
+- **Live Stream Terminal**: Watch the agent's internal thoughts and tool calls in real-time via a dedicated WebSocket-powered CRT terminal.
+- **Visual Ticket Board**: Track ticket states (Open, Closed, Escalated) and agent assignments as they happen.
+- **Reward Sparklines**: Real-time performance tracking with dynamic "Profit & Loss" style visualizations for cumulative rewards.
 
-- 📋 **Classify** ambiguous customer intent across 5 categories
-- ⚖️ **Prioritize** tickets correctly under urgency pressure
-- 💬 **Generate relevant responses** with required keywords, avoiding banned phrases
-- 🚨 **Escalate** judiciously (false escalations are penalized)
-- 🔗 **Handle dependencies** (some tickets block others)
-- 🔄 **Avoid loops** (repeated actions incur dense negative reward)
+### 📩 Manual Ticket Injection
+Test your agent's edge cases by **injecting custom tickets** directly from the dashboard.
+- Define custom user queries.
+- Set ground-truth categories, priorities, and escalation requirements.
+- Validate how the agent handles specific, user-defined scenarios in real-time.
 
-The environment evolves during an episode: priorities auto-escalate, user tone worsens on bad responses, and partial observability hides ground truth from the agent.
+---
+
+## 🧠 Core Evaluation Logic
+
+SupportEnv measures an agent's ability to handle **stateful transitions** and **business logic**:
+
+- 📋 **Intent Classification**: 5 balanced categories (billing, technical, general, etc.).
+- ⚖️ **Dynamic Prioritization**: Urgency levels that escalate automatically the longer a ticket stays open.
+- 💬 **Precision Response**: Keyword matching, Persona-aware tone (angry/polite), and **Forbidden Phrase** avoidance.
+- 🚨 **Escalation Management**: Judges whether the agent correctly involves Tier 2 support or fails to handle a baseline request.
+- 🔄 **Loop Prevention**: Built-in UI safety to stop "Model-in-a-Loop" compute waste.
 
 ---
 
 ## 🏗️ Architecture
 
-```
+```text
+dashboard/              # Glassmorphism UI (HTML/CSS/JS)
+api/
+└── server.py           # FastAPI, WebSockets, & ENV State Manager
 src/
-├── environment.py      # step/reset/state/grade/replay
-├── models.py           # Pydantic v2 data contracts
-├── generator.py        # Procedural, seed-based ticket generation
-├── rewards.py          # Dense reward shaping
-├── graders.py          # Deterministic keyword-based graders
-├── tasks.py            # 3 task configs with success criteria
-├── database.py         # SQLite persistence (episodes/actions/metrics)
-├── supabase_client.py  # Optional Supabase analytics
-├── dynamics.py         # Priority escalation, tone worsening, dependencies
-
-inference.py            # Baseline agent ([START]/[STEP]/[END] format)
-openenv.yaml            # Full OpenEnv v2 specification
-Dockerfile              # HuggingFace Spaces compatible
-api/server.py           # FastAPI REST interface
+├── environment.py      # Core RL logic: step, reset, state
+├── models.py           # Strict Pydantic v2 data contracts
+├── generator.py        # Seed-based procedural ticket generation
+├── rewards.py          # Dense reward shaping engine
+├── graders.py          # Deterministic, non-stochastic grading
+├── database.py         # SQLite persistence for every action
+└── dynamics.py         # Priority leaks & user tone evolution
 ```
 
 ---
 
-## 🎯 Tasks
+## ⚡ Deployment & Running
 
-| Task | Difficulty | Actions | Tickets | Max Steps | Target Score |
-|------|-----------|---------|---------|-----------|--------------|
-| **Easy** | 🟢 Low | classify | 5 | 15 | ≥ 80% |
-| **Medium** | 🟡 Medium | classify, prioritize | 6 | 25 | ≥ 75% |
-| **Hard** | 🔴 High | classify, prioritize, respond, escalate, close | 7 | 40 | ≥ 70% |
+### Option 1: Hugging Face Spaces (Recommended for Showcase)
+This project is pre-configured for Hugging Face Spaces using Docker.
 
-### Task 1 — Classification (Easy)
-Correctly classify 5 tickets into: `billing | technical | general | complaint | positive`.  
-Score = fraction of tickets correctly classified.
+1.  **Create a New Space**: Choose the **Docker** SDK.
+2.  **Add Secrets**: In your Space settings, add these variables:
+    *   `HF_TOKEN`: Your Hugging Face API token (required for LLM inference).
+    *   `MODEL_NAME`: e.g., `meta-llama/Llama-3-70b-instruct`.
+3.  **Push your code**:
+    ```bash
+    git remote add hf https://huggingface.co/spaces/YOUR_USERNAME/YOUR_SPACE_NAME
+    git push hf main --force
+    ```
 
-### Task 2 — Response Generation (Medium)
-Classify and prioritize 6 tickets.  
-Score = `0.5 × classification_rate + 0.5 × priority_rate`.
-
-### Task 3 — Full Workflow (Hard)
-Full pipeline with all 5 actions. Response quality is graded by:
-- Required keywords present in response text
-- Absence of forbidden phrases
-- Correct escalation decisions
-- Respect for ticket dependencies
-
----
-
-## 📐 Action Space
-
-```python
-Action(
-    action_type: "classify" | "prioritize" | "respond" | "escalate" | "close",
-    ticket_id: int,
-    content: str | None  # category | priority | response text | null
-)
-```
-
-## 👁️ Observation Space
-
-```python
-Observation(
-    tickets: List[{
-        "id": int,
-        "text": str,
-        "persona": "angry" | "polite" | "confused",
-        "category": str | None,     # agent-assigned
-        "priority": str | None,     # agent-assigned
-        "status": "open" | "closed" | "escalated",
-        "urgency_hint": "urgent" | "normal",  # partial observability
-        "dependencies": List[int],
-    }],
-    step_count: int,
-    cumulative_reward: float,
-    last_action_error: bool,
-    task: str,
-    info: {
-        "tickets_resolved": int,
-        "efficiency": float,
-        "loops_detected": int,
-        "priority_misses": int,
-    }
-)
-```
-
----
-
-## ⚡ Reward Function
-
-| Event | Reward |
-|-------|--------|
-| Correct classification | **+0.30** |
-| Correct prioritization | **+0.30** |
-| Relevant response (keywords match) | **+0.50** |
-| No forbidden phrases bonus | **+0.20** |
-| Correct escalation | **+0.30** |
-| Close fully-resolved ticket | **+0.20** |
-| Wrong classification/priority | **-0.30** |
-| Irrelevant response | **-0.30** |
-| Incorrect escalation | **-0.30** |
-| **Repeated action (loop)** | **-0.50** |
-| **Invalid action / unknown ticket** | **-1.00** |
-
----
-
-## 🧪 Graders
-
-All graders are **deterministic** — no LLM, no randomness:
-
-| Signal | Weight |
-|--------|--------|
-| Category match | **+0.3** |
-| Required keywords in response | **+0.5** |
-| No forbidden phrases | **+0.2** |
-
-Score ∈ [0.0, 1.0]
-
----
-
-## 🔄 Dynamic State
-
-- **Priority Escalation**: Each ticket has an `escalation_step` threshold. If the step count exceeds it and the ticket is unresolved, its priority increases automatically.
-- **Tone Worsening**: User persona degrades (`polite → confused → angry`) if the agent provides bad/irrelevant responses.
-- **Ticket Dependencies**: In the Hard task, some tickets block others — an agent must resolve prerequisite tickets first.
-- **Partial Observability**: Ground-truth labels (`true_category`, `true_priority`, `requires_escalation`) are hidden from agent observations. Only `urgency_hint` is exposed.
-
----
-
-## 🗄️ Database
-
-Every episode is fully logged to SQLite (`support_env.db`):
-
-| Table | Contents |
-|-------|---------|
-| `episodes` | Task, seed, agent_mode, score, steps, timestamps |
-| `tickets` | End-of-episode ticket snapshots |
-| `actions` | Every step with action, reward, reason |
-| `metrics` | efficiency, loops_detected, priority_misses, final_score |
-
-### Episode Replay
-
-```python
-from src.environment import SupportEnv
-
-env = SupportEnv(task="hard", seed=42)
-env.reset()
-# ... run episode ...
-env.grade()
-
-# Replay any past episode
-actions = env.replay(episode_id=1)
-```
-
----
-
-## 🚀 Quickstart
-
-### Option 1: Local Python
-
+### Option 2: Docker (Local Desktop)
+Run the entire platform locally in a isolated container:
 ```bash
-git clone <your-repo>
-cd hackathon-project
-pip install -r requirements.txt
-
-# Run smoke test
-python smoke_test.py
-
-# Run baseline agent (rule-based, no API key needed)
-python inference.py --task all --agent rule
-
-# Run with LLM (requires HF_TOKEN)
-HF_TOKEN=your_token python inference.py --task hard --agent llm
-```
-
-### Option 2: Docker (Recommended)
-
-```bash
-# Build
+# 1. Build
 docker build -t support-env .
 
-# Run API server
-docker run -p 7860:7860 support-env
-
-# Run baseline agent inside container
-docker exec -it $(docker ps -q --filter ancestor=support-env) \
-    python inference.py --task all --agent rule
-
-# Run with LLM
+# 2. Run with Persistent Data
 docker run -p 7860:7860 \
-  -e HF_TOKEN="your_token" \
-  -e MODEL_NAME="meta-llama/Llama-3-70b-instruct" \
+  -v $(pwd)/data:/home/user/app/data \
+  -e HF_TOKEN="your_token_here" \
   support-env
 ```
+Access the dashboard at **[http://localhost:7860](http://localhost:7860)**.
 
-### Option 3: FastAPI REST
-
+### Option 3: GitHub & Local Development
+If you want to contribute or modify the logic:
 ```bash
-uvicorn api.server:app --port 7860
+# 1. Clone & Setup
+git clone https://github.com/Rhythm280/Support-ENV-Project.git
+cd Support-ENV-Project
+pip install -r requirements.txt
 
-# Reset
-curl -X POST http://localhost:7860/env/reset \
-  -H "Content-Type: application/json" \
-  -d '{"task": "hard", "seed": 42}'
-
-# Step
-curl -X POST http://localhost:7860/env/step \
-  -H "Content-Type: application/json" \
-  -d '{"action_type": "classify", "ticket_id": 1, "content": "billing"}'
-
-# Grade
-curl http://localhost:7860/env/grade
+# 2. Start the Backend
+uvicorn api.server:app --port 7860 --reload
 ```
 
 ---
 
-## ⚙️ Configuration
+## 🛠️ Troubleshooting
 
-| Env Var | Default | Description |
-|---------|---------|-------------|
-| `SUPPORT_ENV_DB` | `support_env.db` | SQLite database path |
-| `ENABLE_SUPABASE` | `false` | Enable Supabase analytics |
-| `SUPABASE_URL` | — | Supabase project URL |
-| `SUPABASE_KEY` | — | Supabase service key |
-| `HF_TOKEN` / `API_KEY` | — | API key for LLM inference |
-| `API_BASE_URL` | HF Router | LLM API base URL |
-| `MODEL_NAME` | Llama-3-70b | Model to use for LLM agent |
+- **Port 7860 in use**: If you see `Address already in use`, run `kill -9 $(lsof -t -i:7860)` or use a different port: `--port 8080`.
+- **Database Locked**: If two processes touch the DB at once, SQLite might lock. Restart the server; WAL mode is enabled to prevent this.
+- **WebSocket Disconnected**: Ensure you are accessing the dashboard via `localhost` or a secure `https` URL if deployed.
 
 ---
 
-## 📊 Baseline Results (Rule-Based Agent, seed=42)
+## 📐 Actions & Rewards
 
-| Task | Score | Notes |
-|------|-------|-------|
-| **Easy** | ~80% | Strong keyword matching |
-| **Medium** | ~72% | Priority inference is heuristic |
-| **Hard** | ~65% | Response quality limited by templates |
-| **Composite** | ~72% | Reproducible across runs |
+### Action Space
+Agents interact via a structured JSON bridge:
+```json
+{
+  "action_type": "classify",
+  "ticket_id": 1,
+  "content": "billing"
+}
+```
+
+### Reward Shaping
+| Event | Reward |
+|-------|--------|
+| Correct Label | **+0.30** |
+| Resolved & Closed | **+0.70** |
+| Wrong Label | **-0.30** |
+| **Action Loop** | **-0.50** |
+| **Invalid Action** | **-1.00** |
 
 ---
 
-## 🧬 Dynamic Ticket Generation
-
-Tickets are generated procedurally — not sampled from a fixed bank:
-
-- **Seed-controlled**: `seed=42` always produces the same episode
-- **Categories**: billing, technical, general, complaint, positive (balanced round-robin)
-- **Personas**: angry, polite, confused (affects text tone and rewards)
-- **Noise**: Realistic typos and casing errors injected at configurable levels
-- **Metadata**: Each ticket includes `required_keywords`, `forbidden_phrases`, and `resolution_steps`
+## 🤗 Deployment to Hugging Face
+SupportEnv is optimized for **Hugging Face Spaces**. 
+1. The `Dockerfile` uses a non-root user (UID 1000) for security.
+2. The UI is built to handle the HF reverse-proxy seamlessly.
+3. Live results are persisted in a persistent SQLite volume.
 
 ---
 
-## 🔬 Running Tests
+## 🔬 Testing & Baselines
+- **Easy Mode**: ~80% Score (Baseline: Keyword Matching)
+- **Hard Mode**: ~65% Score (Baseline: Template Logic)
 
+Run local tests:
 ```bash
 python -m pytest tests/ -v
-python smoke_test.py
 ```
 
 ---
 
 ## 📄 License
-
-MIT. Built for the OpenEnv Hackathon 2026.
+MIT. Built for the **OpenEnv Hackathon 2026**.
