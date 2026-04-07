@@ -26,12 +26,16 @@ W_REQUIRED_KEYWORDS = 0.5
 W_NO_FORBIDDEN      = 0.2
 
 # Validator requires scores strictly inside (0, 1) — not 0.0, not 1.0
-_SCORE_MIN = 0.001
-_SCORE_MAX = 0.999
+_SCORE_MIN = 0.01
+_SCORE_MAX = 0.99
 
 def _clamp(score: float) -> float:
-    """Clamp score to (_SCORE_MIN, _SCORE_MAX) so it is never exactly 0 or 1."""
-    return max(_SCORE_MIN, min(_SCORE_MAX, score))
+    """
+    Clamp score to (_SCORE_MIN, _SCORE_MAX) so it is never exactly 0 or 1.
+    Rounding is performed BEFORE clamping to avoid edge cases like 0.9996 -> 1.0.
+    """
+    s = round(float(score), 4)
+    return max(_SCORE_MIN, min(_SCORE_MAX, s))
 
 
 @dataclass
@@ -114,7 +118,7 @@ def grade_ticket(ticket: Ticket, response_text: Optional[str] = None) -> TicketG
 
     return TicketGradeResult(
         ticket_id=ticket.id,
-        score=_clamp(round(score, 3)),
+        score=_clamp(score),
         category_match=category_match,
         keywords_present=keywords_present,
         no_forbidden=no_forbidden,
@@ -161,8 +165,8 @@ def grade_easy(tickets: List[Ticket]) -> EpisodeGradeReport:
 
     score = _clamp(correct / total)
     return EpisodeGradeReport(
-        score=round(score, 3),
-        breakdown={"classification": _clamp(round(score, 3))},
+        score=score,
+        breakdown={"classification": score},
         ticket_results=ticket_results,
         summary=f"{correct}/{total} tickets correctly classified → {score:.0%}",
     )
@@ -209,10 +213,10 @@ def grade_medium(tickets: List[Ticket]) -> EpisodeGradeReport:
     score = _clamp(0.5 * cat_rate + 0.5 * pri_rate)
 
     return EpisodeGradeReport(
-        score=round(score, 3),
+        score=score,
         breakdown={
-            "classification": _clamp(round(cat_rate, 3)),
-            "prioritization": _clamp(round(pri_rate, 3)),
+            "classification": _clamp(cat_rate),
+            "prioritization": _clamp(pri_rate),
         },
         ticket_results=ticket_results,
         summary=(
@@ -286,12 +290,12 @@ def grade_hard(tickets: List[Ticket]) -> EpisodeGradeReport:
     )
 
     return EpisodeGradeReport(
-        score=round(score, 3),
+        score=score,
         breakdown={
-            "classification": _clamp(round(cat_rate, 3)),
-            "prioritization": _clamp(round(pri_rate, 3)),
-            "response_quality": _clamp(round(resp_rate, 3)),
-            "escalation": _clamp(round(esc_rate, 3)),
+            "classification": _clamp(cat_rate),
+            "prioritization": _clamp(pri_rate),
+            "response_quality": _clamp(resp_rate),
+            "escalation": _clamp(esc_rate),
         },
         ticket_results=ticket_results,
         summary=(
