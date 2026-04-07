@@ -186,13 +186,13 @@ api:
   protocol: REST
   base_url: "http://localhost:7860"
   endpoints:
-    reset:   "POST /env/reset"
-    step:    "POST /env/step"
-    state:   "GET  /env/state"
-    grade:   "GET  /env/grade"
-    replay:  "GET  /env/replay/{episode_id}"
+    reset:   "POST /reset"
+    step:    "POST /step"
+    state:   "GET  /state"
+    grade:   "GET  /grade"
+    replay:  "GET  /replay/{episode_id}"
     health:  "GET  /health"
-    episodes: "GET  /env/episodes"
+    episodes: "GET  /episodes"
 
 # ─── Meta ─────────────────────────────────────────────────────────────────────
 deterministic_grader: true

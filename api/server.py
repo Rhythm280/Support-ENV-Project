@@ -132,6 +132,7 @@ def health():
     return {"status": "ok", "env_ready": _env is not None}
 
 
+@app.post("/reset")
 @app.post("/env/reset")
 async def reset(req: ResetRequest):
     global _env
@@ -155,6 +156,7 @@ async def reset(req: ResetRequest):
     return obs.model_dump()
 
 
+@app.post("/step")
 @app.post("/env/step")
 async def step(action: Action):
     env = _get_env()
@@ -183,6 +185,7 @@ async def step(action: Action):
     }
 
 
+@app.post("/ticket")
 @app.post("/env/ticket")
 async def add_custom_ticket(req: TicketRequest):
     global _env
@@ -211,11 +214,13 @@ async def add_custom_ticket(req: TicketRequest):
     return {"status": "ok", "ticket_id": ticket.id}
 
 
+@app.get("/state")
 @app.get("/env/state")
 def state():
     return _get_env().state()
 
 
+@app.get("/grade")
 @app.get("/env/grade")
 def grade():
     env = _get_env()
@@ -227,6 +232,7 @@ def grade():
     }
 
 
+@app.get("/config")
 @app.get("/env/config")
 def config():
     env = _get_env()
