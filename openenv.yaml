@@ -144,7 +144,7 @@ graders:
     category_match: 0.3
     required_keywords_present: 0.5
     no_forbidden_phrases: 0.2
-  score_range: [0.0, 1.0]
+  score_range: [0.01, 0.99]
 
 # ─── Database ─────────────────────────────────────────────────────────────────
 database:
