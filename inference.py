@@ -9,6 +9,7 @@ MANDATORY REQUIREMENTS:
 """
 
 import os
+import sys
 import json
 import logging
 import argparse
@@ -30,7 +31,7 @@ MODEL_NAME   = os.getenv("MODEL_NAME", "meta-llama/Meta-Llama-3-8B-Instruct")
 HF_TOKEN     = os.getenv("HF_TOKEN")
 LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME")
 
-logging.basicConfig(level=logging.INFO, format="%(message)s")
+logging.basicConfig(level=logging.INFO, format="%(message)s", stream=sys.stdout)
 logger = logging.getLogger(__name__)
 
 if _OPENAI_AVAILABLE:
