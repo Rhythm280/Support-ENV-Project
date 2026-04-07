@@ -206,20 +206,21 @@ def _build_response(txt: str, category: Optional[str]) -> str:
         "general":   "Thank you for reaching out! We are happy to help with your question. Our team is available Monday–Friday 9am–6pm UTC. Please check our help center or add team members via Settings > Team.",
         "positive":  "Thank you so much for your wonderful feedback! We are glad to hear about your experience. We appreciate your kind words and have shared this with the team. We look forward to serving you!",
     }
-    return responses.get(cat, "Thank you for contacting support. We will resolve your issue promptly.")
-
-
 # ── Logging Helpers ────────────────────────────────────────────────────────
-def log_start(task: str, env: str, model: str):
+def log_start(task: str, env: str, model: str) -> None:
     print(f"[START] task={task} env={env} model={model}", flush=True)
 
-def log_step(step: int, action: str, reward: float, done: bool, error: Optional[str] = None):
-    # Matches sample format: action=message reward=float done=bool ...
-    err_str = f" error={error}" if error else ""
-    print(f"[STEP {step}] action={action!r} reward={reward:.2f} done={done}{err_str}", flush=True)
+def log_step(step: int, action: str, reward: float, done: bool, error: Optional[str]) -> None:
+    error_val = error if error else "null"
+    done_val = str(done).lower()
+    print(
+        f"[STEP] step={step} action={action} reward={reward:.2f} done={done_val} error={error_val}",
+        flush=True,
+    )
 
-def log_end(success: bool, steps: int, score: float, rewards: List[float]):
-    print(f"[END] success={success} steps={steps} score={score:.4f} rewards={rewards}", flush=True)
+def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> None:
+    rewards_str = ",".join(f"{r:.2f}" for r in rewards)
+    print(f"[END] success={str(success).lower()} steps={steps} score={score:.3f} rewards={rewards_str}", flush=True)
 
 
 # ── Runner ───────────────────────────────────────────────────────────────────
@@ -234,7 +235,7 @@ def run_episode(task: str, agent_mode: str, seed: int = 42) -> float:
     agent = BaselineAgent(mode=agent_mode)
     done = False
     step_n = 0
-    rewards = []
+    rewards: List[float] = []
 
     while not done:
         step_n += 1
@@ -246,7 +247,8 @@ def run_episode(task: str, agent_mode: str, seed: int = 42) -> float:
         obs, reward, done, info = env.step(action)
         rewards.append(reward)
 
-        log_step(step=step_n, action=action_str, reward=reward, done=done)
+        error_msg = info.get("error") if isinstance(info, dict) else None
+        log_step(step=step_n, action=repr(action_str), reward=reward, done=done, error=error_msg)
         config = env.state()
 
     report = env.grade()

@@ -135,7 +135,7 @@ class SupportEnv:
         )
 
         logger.info(
-            "[SupportEnv] Reset — task=%s seed=%d tickets=%d episode_id=%s",
+            "SupportEnv: Reset — task=%s seed=%d tickets=%d episode_id=%s",
             self.task_name, self.seed, len(self._tickets), self._episode_id,
         )
         return self._build_observation(error=False)
@@ -353,7 +353,7 @@ class SupportEnv:
         actions = db.replay_episode(episode_id, db_path=self.db_path)
         episode_data = db.load_episode(episode_id, db_path=self.db_path)
         logger.info(
-            "[SupportEnv] Replaying episode %d | task=%s seed=%d steps=%d score=%.3f",
+            "SupportEnv: Replaying episode %d | task=%s seed=%d steps=%d score=%.3f",
             episode_id,
             episode_data["episode"]["task"],
             episode_data["episode"]["seed"],
