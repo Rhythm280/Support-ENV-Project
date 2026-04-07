@@ -114,7 +114,7 @@ def grade_ticket(ticket: Ticket, response_text: Optional[str] = None) -> TicketG
 
     return TicketGradeResult(
         ticket_id=ticket.id,
-        score=round(score, 3),
+        score=_clamp(round(score, 3)),
         category_match=category_match,
         keywords_present=keywords_present,
         no_forbidden=no_forbidden,
@@ -137,7 +137,12 @@ def grade_easy(tickets: List[Ticket]) -> EpisodeGradeReport:
     """
     total = len(tickets)
     if not total:
-        return EpisodeGradeReport(score=0.0, breakdown={}, ticket_results=[], summary="No tickets")
+        return EpisodeGradeReport(
+            score=_SCORE_MIN,
+            breakdown={"classification": _SCORE_MIN},
+            ticket_results=[],
+            summary="No tickets"
+        )
 
     ticket_results = []
     correct = 0
@@ -147,7 +152,7 @@ def grade_easy(tickets: List[Ticket]) -> EpisodeGradeReport:
             correct += 1
         ticket_results.append(TicketGradeResult(
             ticket_id=t.id,
-            score=1.0 if match else 0.0,
+            score=_clamp(1.0) if match else _SCORE_MIN,
             category_match=match,
             keywords_present=False,
             no_forbidden=True,
@@ -157,7 +162,7 @@ def grade_easy(tickets: List[Ticket]) -> EpisodeGradeReport:
     score = _clamp(correct / total)
     return EpisodeGradeReport(
         score=round(score, 3),
-        breakdown={"classification": round(score, 3)},
+        breakdown={"classification": _clamp(round(score, 3))},
         ticket_results=ticket_results,
         summary=f"{correct}/{total} tickets correctly classified → {score:.0%}",
     )
@@ -170,7 +175,12 @@ def grade_medium(tickets: List[Ticket]) -> EpisodeGradeReport:
     """
     total = len(tickets)
     if not total:
-        return EpisodeGradeReport(score=0.0, breakdown={}, ticket_results=[], summary="No tickets")
+        return EpisodeGradeReport(
+            score=_SCORE_MIN,
+            breakdown={"classification": _SCORE_MIN, "prioritization": _SCORE_MIN},
+            ticket_results=[],
+            summary="No tickets"
+        )
 
     ticket_results = []
     correct_cats = 0
@@ -187,7 +197,7 @@ def grade_medium(tickets: List[Ticket]) -> EpisodeGradeReport:
         partial_score = (0.5 if cat_match else 0.0) + (0.5 if pri_match else 0.0)
         ticket_results.append(TicketGradeResult(
             ticket_id=t.id,
-            score=round(partial_score, 3),
+            score=_clamp(round(partial_score, 3)),
             category_match=cat_match,
             keywords_present=False,
             no_forbidden=True,
@@ -201,8 +211,8 @@ def grade_medium(tickets: List[Ticket]) -> EpisodeGradeReport:
     return EpisodeGradeReport(
         score=round(score, 3),
         breakdown={
-            "classification": round(cat_rate, 3),
-            "prioritization": round(pri_rate, 3),
+            "classification": _clamp(round(cat_rate, 3)),
+            "prioritization": _clamp(round(pri_rate, 3)),
         },
         ticket_results=ticket_results,
         summary=(
@@ -224,7 +234,17 @@ def grade_hard(tickets: List[Ticket]) -> EpisodeGradeReport:
     """
     total = len(tickets)
     if not total:
-        return EpisodeGradeReport(score=0.0, breakdown={}, ticket_results=[], summary="No tickets")
+        return EpisodeGradeReport(
+            score=_SCORE_MIN,
+            breakdown={
+                "classification": _SCORE_MIN,
+                "prioritization": _SCORE_MIN,
+                "response_quality": _SCORE_MIN,
+                "escalation": _SCORE_MIN
+            },
+            ticket_results=[],
+            summary="No tickets"
+        )
 
     ticket_results = []
     correct_cats = 0
@@ -268,10 +288,10 @@ def grade_hard(tickets: List[Ticket]) -> EpisodeGradeReport:
     return EpisodeGradeReport(
         score=round(score, 3),
         breakdown={
-            "classification": round(cat_rate, 3),
-            "prioritization": round(pri_rate, 3),
-            "response_quality": round(resp_rate, 3),
-            "escalation": round(esc_rate, 3),
+            "classification": _clamp(round(cat_rate, 3)),
+            "prioritization": _clamp(round(pri_rate, 3)),
+            "response_quality": _clamp(round(resp_rate, 3)),
+            "escalation": _clamp(round(esc_rate, 3)),
         },
         ticket_results=ticket_results,
         summary=(
