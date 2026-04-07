@@ -18,7 +18,7 @@ import logging
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -134,7 +134,7 @@ def health():
 
 @app.post("/reset")
 @app.post("/env/reset")
-async def reset(req: ResetRequest):
+async def reset(req: ResetRequest = Body(default=ResetRequest())):
     global _env
     try:
         task = TaskName(req.task)
