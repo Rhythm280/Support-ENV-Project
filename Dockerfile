@@ -24,7 +24,7 @@ RUN pip install --no-cache-dir --user -r requirements.txt
 COPY --chown=user . .
 
 # Ensure package __init__ files exist
-RUN touch src/__init__.py api/__init__.py
+RUN touch src/__init__.py server/__init__.py
 
 # Create data directory for SQLite database
 RUN mkdir -p $HOME/app/data && chown -R user:user $HOME/app/data
@@ -43,4 +43,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:7860/health || exit 1
 
 # Start FastAPI server
-CMD ["uvicorn", "api.server:app", "--host", "0.0.0.0", "--port", "7860", "--workers", "1"]
+CMD ["python", "-m", "server.app"]

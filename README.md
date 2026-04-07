@@ -52,8 +52,8 @@ SupportEnv measures an agent's ability to handle **stateful transitions** and **
 
 ```text
 dashboard/              # Glassmorphism UI (HTML/CSS/JS)
-api/
-└── server.py           # FastAPI, WebSockets, & ENV State Manager
+server/
+└── app.py              # FastAPI, WebSockets, & ENV State Manager
 src/
 ├── environment.py      # Core RL logic: step, reset, state
 ├── models.py           # Strict Pydantic v2 data contracts
@@ -104,7 +104,7 @@ cd Support-ENV-Project
 pip install -r requirements.txt
 
 # 2. Start the Backend
-uvicorn api.server:app --port 7860 --reload
+python -m server.app
 ```
 
 ---

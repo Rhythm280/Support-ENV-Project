@@ -185,6 +185,7 @@ priorities:
 api:
   protocol: REST
   base_url: "http://localhost:7860"
+  module: "server.app"
   endpoints:
     reset:   "POST /reset"
     step:    "POST /step"
