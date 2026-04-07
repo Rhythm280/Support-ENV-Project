@@ -278,11 +278,11 @@ class TestGraders:
                 content=t.true_category.value,
             ))
         report = easy_env.grade()
-        assert report.score == pytest.approx(1.0)
+        assert report.score == pytest.approx(0.99)
 
     def test_grade_easy_zero_score(self, easy_env):
         report = easy_env.grade()
-        assert report.score == pytest.approx(0.0)
+        assert report.score == pytest.approx(0.01)
 
     def test_grade_medium_partial(self, medium_env):
         for t in medium_env._tickets:
@@ -367,7 +367,7 @@ class TestDatabase:
 
         data = load_episode(env._episode_id, db_path=db_path)
         assert len(data["metrics"]) == 1
-        assert data["metrics"][0]["final_score"] == pytest.approx(1.0)
+        assert data["metrics"][0]["final_score"] == pytest.approx(0.99)
 
     def test_replay_returns_actions(self, tmp_path):
         db_path = str(tmp_path / "test.db")

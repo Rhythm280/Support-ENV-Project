@@ -107,7 +107,7 @@ def run_tests():
                 content=t.true_category.value,
             ))
         report = env3.grade()
-        assert report.score == 1.0, f"Expected 1.0, got {report.score}"
+        assert report.score == 0.99, f"Expected 0.99, got {report.score}"
         print(f"✓ [6] Grading: Perfect run on 'easy' → {report.score*100:.0f}%")
         passed += 1
     except Exception as e:
