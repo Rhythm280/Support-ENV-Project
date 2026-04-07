@@ -246,13 +246,18 @@ def run_episode(task: str, agent_mode: str, seed: int = 42) -> float:
     elapsed = time.monotonic() - start_time
     report = env.grade()
 
+    # Safety clamp: guarantee score is strictly in (0, 1) — required by OpenEnv validator.
+    # The graders already apply _clamp internally, but this is a final catch-all
+    # in case any code path produces exactly 0.0 or 1.0 before reaching this line.
+    final_score = max(0.01, min(0.99, float(report.score)))
+
     # ── [END] ────────────────────────────────────────────────────────────────
     logger.info("[END] task=%s score=%.4f cumulative_reward=%.3f steps=%d elapsed=%.2fs",
-                task.upper(), report.score, obs.cumulative_reward, step_n, elapsed)
+                task.upper(), final_score, obs.cumulative_reward, step_n, elapsed)
     logger.info("[END] breakdown=%s", json.dumps(report.breakdown))
     logger.info("[END] summary=%s", report.summary)
 
-    return report.score
+    return final_score
 
 
 def main():

@@ -272,19 +272,19 @@ def run_episode(task: str, agent_type: str, seed: int = 42) -> None:
             if action is None:
                 continue
 
-            result = env.step(action)
-            obs = result.observation
+            # env.step() returns (obs, reward, done, info) tuple
+            obs, reward, done, info = env.step(action)
             print(
-                f"  Step {result.info['step']:>2} | "
+                f"  Step {info.get('step', step):>2} | "
                 f"ticket={action.ticket_id} | "
                 f"action={action.action_type.value:<11}| "
-                f"reward={result.reward:+.2f} | "
+                f"reward={reward:+.2f} | "
                 f"cum={obs.cumulative_reward:+.2f}  | "
-                f"{result.info['reason']}"
+                f"{info.get('reason', '')}"
             )
             acted = True
 
-            if result.done or result.truncated:
+            if done or env._done:
                 break
 
         if not acted or env._done:
@@ -293,8 +293,10 @@ def run_episode(task: str, agent_type: str, seed: int = 42) -> None:
         step += 1
 
     report = env.grade()
+    # Safety clamp: ensure score is strictly in (0, 1) — never exactly 0.0 or 1.0
+    final_score = max(0.01, min(0.99, float(report.score)))
     print(f"\n{'='*60}")
-    print(f"  FINAL SCORE: {report.score:.1%}")
+    print(f"  FINAL SCORE: {final_score:.1%}")
     print(f"  {report.summary}")
     print(f"  Breakdown: {report.breakdown}")
     print(f"  Cumulative reward: {env._cumulative_reward:+.3f}")

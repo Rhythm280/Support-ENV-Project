@@ -1,12 +1,13 @@
 """
 graders.py — Deterministic, keyword-based graders for SupportEnv.
 
-Scoring breakdown per ticket (returns float ∈ [0.0, 1.0]):
+Scoring breakdown per ticket (returns float strictly in (0, 1)):
   +0.3  category match (correct classification)
   +0.5  required_keywords present in response
   +0.2  no forbidden_phrases in response
 
 These graders are PURELY rule-based — NO LLM calls, NO stochasticity.
+All scores are strictly in (0.01, 0.99) — never exactly 0.0 or 1.0.
 """
 
 from __future__ import annotations
@@ -31,11 +32,36 @@ _SCORE_MAX = 0.99
 
 def _clamp(score: float) -> float:
     """
-    Clamp score to (_SCORE_MIN, _SCORE_MAX) so it is never exactly 0 or 1.
-    Rounding is performed BEFORE clamping to avoid edge cases like 0.9996 -> 1.0.
+    Clamp score strictly into (_SCORE_MIN, _SCORE_MAX) = (0.01, 0.99).
+    NEVER returns exactly 0.0 or 1.0.
+
+    Handles: NaN, infinity, None, integer 0/1, and all float edge cases.
     """
-    s = round(float(score), 4)
-    return max(_SCORE_MIN, min(_SCORE_MAX, s))
+    try:
+        s = float(score)
+    except (TypeError, ValueError):
+        return _SCORE_MIN
+
+    # Guard against NaN (NaN != NaN is the only reliable NaN check)
+    if s != s:
+        return _SCORE_MIN
+
+    # Explicit boundary check — never 0.0 or 1.0
+    if s <= 0.0:
+        return _SCORE_MIN
+    if s >= 1.0:
+        return _SCORE_MAX
+
+    # Round to avoid floating-point creep (e.g. 0.99999... rounding up)
+    s = round(s, 4)
+
+    # Final hard clamp after rounding
+    if s <= 0.0:
+        return _SCORE_MIN
+    if s >= 1.0:
+        return _SCORE_MAX
+
+    return s
 
 
 @dataclass
@@ -269,13 +295,18 @@ def grade_hard(tickets: List[Ticket]) -> EpisodeGradeReport:
             correct_cats += 1
         if t.priority is not None and t.priority == t.true_priority:
             correct_pris += 1
-        # Response score: keywords (0.5 weight) + no-forbidden (0.2 weight) normalized
+        # Response score: keywords (5/7 weight) + no-forbidden (2/7 weight) → sums to 1.0
+        # Using exact fractions avoids floating-point accumulation to exactly 1.0
         resp_score = 0.0
         if t.response:
             response_lower = t.response.lower()
             keywords_hit = all(kw in response_lower for kw in t.required_keywords)
             no_bad = not any(p in response_lower for p in t.forbidden_phrases)
-            resp_score = (0.714 if keywords_hit else 0.0) + (0.286 if no_bad else 0.0)  # sum to 1.0
+            raw = (5 / 7 if keywords_hit else 0.0) + (2 / 7 if no_bad else 0.0)
+            # Clamp each individual resp_score before accumulating
+            resp_score = _clamp(raw)
+        else:
+            resp_score = _SCORE_MIN
         response_scores.append(resp_score)
 
     cat_rate = correct_cats / total

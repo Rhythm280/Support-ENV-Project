@@ -226,10 +226,16 @@ def state():
 def grade():
     env = _get_env()
     report = env.grade()
+    # Safety clamp: all scores must be strictly in (0, 1) per OpenEnv validator rules
+    safe_score = max(0.01, min(0.99, float(report.score)))
+    safe_breakdown = {
+        k: max(0.01, min(0.99, float(v)))
+        for k, v in report.breakdown.items()
+    }
     return {
-        "score": round(report.score, 4),
+        "score": round(safe_score, 4),
         "summary": report.summary,
-        "breakdown": report.breakdown,
+        "breakdown": safe_breakdown,
     }
 
 
