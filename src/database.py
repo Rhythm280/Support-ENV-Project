@@ -127,7 +127,7 @@ def init_db(db_path: str = DB_PATH) -> None:
     """Create all tables if they don't exist. Safe to call multiple times."""
     with _get_conn(db_path) as conn:
         conn.executescript(_SCHEMA_SQL)
-    logger.info("[DB] Initialized SQLite database at: %s", db_path)
+    logger.info("DB: Initialized SQLite database at: %s", db_path)
 
 
 # ─────────────────────────────────────────────────────────────────────────────

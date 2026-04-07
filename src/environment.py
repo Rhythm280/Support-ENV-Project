@@ -166,7 +166,7 @@ class SupportEnv:
         self._tickets.append(ticket)
         self._bad_response_counts[ticket.id] = 0
         
-        logger.info("[SupportEnv] Injected custom ticket #%d: %s...", ticket.id, text[:30])
+        logger.info("SupportEnv: Injected custom ticket #%d: %s...", ticket.id, text[:30])
         return ticket
 
     def step(self, action: Action) -> tuple[Observation, float, bool, dict]:
@@ -240,7 +240,7 @@ class SupportEnv:
         # ── Update cumulative reward ───────────────────────────────────────────
         self._cumulative_reward += reward
 
-        logger.info(
+        logger.debug(
             "[step %d] action=%s ticket=%d reward=%.2f reason=%s",
             self._step_count, action.action_type, action.ticket_id, reward, reason,
         )

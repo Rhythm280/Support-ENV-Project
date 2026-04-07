@@ -209,6 +209,19 @@ def _build_response(txt: str, category: Optional[str]) -> str:
     return responses.get(cat, "Thank you for contacting support. We will resolve your issue promptly.")
 
 
+# ── Logging Helpers ────────────────────────────────────────────────────────
+def log_start(task: str, env: str, model: str):
+    print(f"[START] task={task} env={env} model={model}", flush=True)
+
+def log_step(step: int, action: str, reward: float, done: bool, error: Optional[str] = None):
+    # Matches sample format: action=message reward=float done=bool ...
+    err_str = f" error={error}" if error else ""
+    print(f"[STEP {step}] action={action!r} reward={reward:.2f} done={done}{err_str}", flush=True)
+
+def log_end(success: bool, steps: int, score: float, rewards: List[float]):
+    print(f"[END] success={success} steps={steps} score={score:.4f} rewards={rewards}", flush=True)
+
+
 # ── Runner ───────────────────────────────────────────────────────────────────
 
 def run_episode(task: str, agent_mode: str, seed: int = 42) -> float:
@@ -216,46 +229,37 @@ def run_episode(task: str, agent_mode: str, seed: int = 42) -> float:
     obs = env.reset()
     config = env.state()
 
-    # ── [START] ──────────────────────────────────────────────────────────────
-    logger.info("[START] task=%s agent=%s seed=%d episode_id=%s",
-                task.upper(), agent_mode, seed, env._episode_id)
-    logger.info("[START] tickets=%d max_steps=%d allowed_actions=%s",
-                len(obs.tickets), config["max_steps"], config["allowed_actions"])
+    log_start(task=task.upper(), env="SupportEnv", model=MODEL_NAME if agent_mode == "llm" else "rule-agent")
 
     agent = BaselineAgent(mode=agent_mode)
     done = False
     step_n = 0
-    start_time = time.monotonic()
+    rewards = []
 
     while not done:
         step_n += 1
         action = agent.act(obs, config)
-
-        logger.info("[STEP %d] action_type=%s ticket_id=%d content=%s",
-                    step_n, action.action_type.value, action.ticket_id,
-                    repr(action.content) if action.content else "null")
+        action_str = f"{action.action_type.value} ticket={action.ticket_id}"
+        if action.content:
+            action_str += f" | {action.content}"
 
         obs, reward, done, info = env.step(action)
+        rewards.append(reward)
 
-        logger.info("[STEP %d] reward=%.3f cumulative=%.3f tickets_resolved=%d loops=%d",
-                    step_n, reward, obs.cumulative_reward,
-                    info.get("tickets_resolved", 0), info.get("loops_detected", 0))
-
+        log_step(step=step_n, action=action_str, reward=reward, done=done)
         config = env.state()
 
-    elapsed = time.monotonic() - start_time
     report = env.grade()
 
-    # Safety clamp: guarantee score is strictly in (0, 1) — required by OpenEnv validator.
-    # The graders already apply _clamp internally, but this is a final catch-all
-    # in case any code path produces exactly 0.0 or 1.0 before reaching this line.
+    # Safety clamp: guarantee score is strictly in (0, 1)
     final_score = max(0.01, min(0.99, float(report.score)))
+    success = final_score >= 0.5  # Arbitrary threshold for logging purposes
 
-    # ── [END] ────────────────────────────────────────────────────────────────
-    logger.info("[END] task=%s score=%.4f cumulative_reward=%.3f steps=%d elapsed=%.2fs",
-                task.upper(), final_score, obs.cumulative_reward, step_n, elapsed)
-    logger.info("[END] breakdown=%s", json.dumps(report.breakdown))
-    logger.info("[END] summary=%s", report.summary)
+    log_end(success=success, steps=step_n, score=final_score, rewards=rewards)
+
+    # Internal debug info
+    logger.debug("Breakdown: %s", report.breakdown)
+    logger.debug("Summary: %s", report.summary)
 
     return final_score
 
