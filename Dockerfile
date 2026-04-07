@@ -1,4 +1,4 @@
-FROM python:3.10-slim
+FROM python:3.10-slim-bookworm
 
 # Use a non-root user for security and HF compatibility
 RUN useradd -m -u 1000 user
