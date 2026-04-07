@@ -14,6 +14,7 @@ Endpoints:
 
 from __future__ import annotations
 
+import json
 import logging
 from contextlib import asynccontextmanager
 from typing import Optional
@@ -251,6 +252,7 @@ def config():
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
+    logger.info("WebSocket connected: %s", websocket.client)
     try:
         # Initial greeting
         await websocket.send_text(json.dumps({
@@ -259,11 +261,20 @@ async def websocket_endpoint(websocket: WebSocket):
         }))
         while True:
             # Just keep the connection alive
-            await websocket.receive_text()
+            data = await websocket.receive_text()
+            # Respond to client-side pings if they are JSON
+            try:
+                msg = json.loads(data)
+                if msg.get("type") == "ping":
+                    await websocket.send_text(json.dumps({"type": "pong"}))
+            except:
+                pass
     except WebSocketDisconnect:
         manager.disconnect(websocket)
-    except Exception:
+        logger.info("WebSocket disconnected: %s", websocket.client)
+    except Exception as e:
         manager.disconnect(websocket)
+        logger.error("WebSocket error: %s | Client: %s", e, websocket.client)
 
 def main():
     import uvicorn

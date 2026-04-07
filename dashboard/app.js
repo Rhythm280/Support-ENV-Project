@@ -23,6 +23,7 @@ let episodeDone   = false;
 let ws            = null;
 let reconnectWait = 1000; // ms
 const MAX_RECONNECT = 30000; // 30s max wait
+let heartbeatTimer = null;
 
 // ── Task metadata ────────────────────────────────────────────────────────────
 const TASK_DESCS = {
@@ -523,6 +524,14 @@ function initWebSocket() {
     wsStatus.className   = 'badge badge-green';
     reconnectWait = 1000; // reset wait
     appendToTerminal('System: [CONNECTED] Live-Stream Terminal initialized.', 'system');
+
+    // Start Heartbeat to keep connection alive through proxies
+    if (heartbeatTimer) clearInterval(heartbeatTimer);
+    heartbeatTimer = setInterval(() => {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'ping' }));
+      }
+    }, 15000); // 15s
   };
 
   ws.onmessage = async (event) => {
@@ -546,11 +555,18 @@ function initWebSocket() {
     }
   };
 
-  ws.onclose = () => {
-    console.warn(`❌ Live Stream Disconnected. Reconnecting in ${reconnectWait}ms…`);
+  ws.onclose = (event) => {
+    console.warn(`❌ Live Stream Disconnected (Code: ${event.code}). Reconnecting in ${reconnectWait}ms…`);
     wsStatus.textContent = 'offline';
     wsStatus.className   = 'badge badge-error';
-    appendToTerminal('System: [DISCONNECTED] Reconnecting...', 'error');
+    
+    if (heartbeatTimer) {
+      clearInterval(heartbeatTimer);
+      heartbeatTimer = null;
+    }
+
+    let reason = event.reason || "Abnormal Closure";
+    appendToTerminal(`System: [DISCONNECTED] Code: ${event.code} | Reason: ${reason} | Reconnecting...`, 'error');
     
     setTimeout(() => {
       reconnectWait = Math.min(reconnectWait * 1.5, MAX_RECONNECT);
