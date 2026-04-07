@@ -25,6 +25,14 @@ W_CATEGORY_MATCH    = 0.3
 W_REQUIRED_KEYWORDS = 0.5
 W_NO_FORBIDDEN      = 0.2
 
+# Validator requires scores strictly inside (0, 1) — not 0.0, not 1.0
+_SCORE_MIN = 0.001
+_SCORE_MAX = 0.999
+
+def _clamp(score: float) -> float:
+    """Clamp score to (_SCORE_MIN, _SCORE_MAX) so it is never exactly 0 or 1."""
+    return max(_SCORE_MIN, min(_SCORE_MAX, score))
+
 
 @dataclass
 class TicketGradeResult:
@@ -146,7 +154,7 @@ def grade_easy(tickets: List[Ticket]) -> EpisodeGradeReport:
             detail=f"classify={'✓' if match else '✗'} (got={t.category}, expected={t.true_category})",
         ))
 
-    score = correct / total
+    score = _clamp(correct / total)
     return EpisodeGradeReport(
         score=round(score, 3),
         breakdown={"classification": round(score, 3)},
@@ -188,7 +196,7 @@ def grade_medium(tickets: List[Ticket]) -> EpisodeGradeReport:
 
     cat_rate = correct_cats / total
     pri_rate = correct_pris / total
-    score = 0.5 * cat_rate + 0.5 * pri_rate
+    score = _clamp(0.5 * cat_rate + 0.5 * pri_rate)
 
     return EpisodeGradeReport(
         score=round(score, 3),
@@ -250,7 +258,7 @@ def grade_hard(tickets: List[Ticket]) -> EpisodeGradeReport:
     pri_rate = correct_pris / total
     resp_rate = sum(response_scores) / total if response_scores else 0.0
 
-    score = (
+    score = _clamp(
         0.30 * cat_rate +
         0.25 * pri_rate +
         0.25 * resp_rate +
