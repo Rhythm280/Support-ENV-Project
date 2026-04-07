@@ -28,7 +28,8 @@ from src.models import Action, ActionType, TaskName
 # ── Config ──────────────────────────────────────────────────────────────────
 API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
 MODEL_NAME   = os.getenv("MODEL_NAME", "meta-llama/Meta-Llama-3-8B-Instruct")
-HF_TOKEN     = os.getenv("HF_TOKEN")
+# Validator injects API_KEY; fall back to HF_TOKEN for local dev
+API_KEY      = os.getenv("API_KEY") or os.getenv("HF_TOKEN", "n/a")
 LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME")
 
 logging.basicConfig(level=logging.INFO, format="%(message)s", stream=sys.stdout)
@@ -37,7 +38,7 @@ logger = logging.getLogger(__name__)
 if _OPENAI_AVAILABLE:
     client = OpenAI(
         base_url=API_BASE_URL,
-        api_key=HF_TOKEN if HF_TOKEN else "n/a",
+        api_key=API_KEY,
     )
 else:
     client = None  # type: ignore
@@ -86,8 +87,8 @@ class BaselineAgent:
         if not _OPENAI_AVAILABLE or client is None:
             logger.warning("⚠️  openai package not installed — falling back to rule agent.")
             return self._rule_act(obs, config)
-        if not HF_TOKEN or HF_TOKEN == "n/a":
-            logger.warning("⚠️  HF_TOKEN not set — falling back to rule-based agent.")
+        if not API_KEY or API_KEY == "n/a":
+            logger.warning("⚠️  API_KEY not set — falling back to rule-based agent.")
             return self._rule_act(obs, config)
 
         tickets_str = json.dumps(obs.tickets, indent=2)
@@ -257,7 +258,7 @@ def run_episode(task: str, agent_mode: str, seed: int = 42) -> float:
 def main():
     parser = argparse.ArgumentParser(description="SupportEnv Baseline Agent")
     parser.add_argument("--task",  type=str, choices=["easy", "medium", "hard", "all"], default="all")
-    parser.add_argument("--agent", type=str, choices=["rule", "llm"], default="rule")
+    parser.add_argument("--agent", type=str, choices=["rule", "llm"], default="llm")
     parser.add_argument("--seed",  type=int, default=42)
     args = parser.parse_args()
 
